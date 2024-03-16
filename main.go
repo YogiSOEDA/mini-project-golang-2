@@ -7,6 +7,9 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
+
+	"github.com/go-pdf/fpdf"
 )
 
 type Buku struct {
@@ -472,6 +475,87 @@ func EditBuku()  {
 	}
 }
 
+func PrintPdfBuku()  {
+	fmt.Println("===========================================")
+	fmt.Println("Print Buku")
+	fmt.Println("===========================================")
+	LihatBuku()
+	fmt.Println("===========================================")
+	fmt.Println("Silahkan Pilih :")
+	fmt.Println("1. Print Salah Satu Buku")
+	fmt.Println("2. Print Semua Buku")
+	fmt.Println("===========================================")
+	
+	pilihanMenu := 0
+	fmt.Print("Masukkan Pilihan : ")
+	_, err := fmt.Scanln(&pilihanMenu)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	_ = os.Mkdir("pdf", 0777)
+
+	pdf := fpdf.New("P", "mm", "A4", "")
+	pdf.AddPage()
+	pdf.SetFont("Arial", "", 12)
+	pdf.SetLeftMargin(10)
+	pdf.SetRightMargin(10)
+
+	switch pilihanMenu {
+	case 1:
+		var(
+			kodeBuku string
+			isExist bool = false
+		)
+
+		fmt.Print("Masukkan Kode Buku : ")
+		_, err := fmt.Scanln(&kodeBuku)
+		if err != nil {
+			fmt.Println("Terjadi Error : ", err)
+			return
+		}
+
+		for _, buku := range ListBuku {
+			if buku.KodeBuku == kodeBuku {
+				bukuText := fmt.Sprintf(
+					"Buku :\nKode Buku : %s\nJudul Buku : %s\nPengarang : %s\nPenerbit : %s\nJumlah Halaman : %d\nTahunTerbit : %d\n",
+					buku.KodeBuku, buku.JudulBuku, buku.Pengarang, buku.Penerbit, buku.JumlahHalaman, buku.TahunTerbit)
+				
+				pdf.MultiCell(0, 10, bukuText, "0", "L", false)
+
+				err := pdf.OutputFileAndClose(
+					fmt.Sprintf("pdf/book-%s.pdf", kodeBuku))
+				
+				if err != nil {
+					fmt.Println(err)
+				}
+
+				isExist = true
+			}
+		}
+
+		if !isExist {
+			fmt.Println("Buku Tidak Ditemukan")
+		}
+	case 2:
+		for i, buku := range ListBuku {
+			bukuText := fmt.Sprintf(
+				"Buku #%d:\nKode Buku : %s\nJudul Buku : %s\nPengarang : %s\nPenerbit : %s\nJumlah Halaman : %d\nTahunTerbit : %d\n",
+				i+1, buku.KodeBuku, buku.JudulBuku, buku.Pengarang, buku.Penerbit, buku.JumlahHalaman, buku.TahunTerbit)
+
+			pdf.MultiCell(0, 10, bukuText, "0", "L", false)
+			pdf.Ln(5)
+		}
+
+		err := pdf.OutputFileAndClose(
+			fmt.Sprintf("pdf/daftar_buku_%s.pdf", time.Now().Format("2006-01-02-15-04-05")))
+
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
+}
+
 func main() {
 	pilihanMenu := 0
 
@@ -483,7 +567,8 @@ func main() {
 	fmt.Println("2. Lihat Buku")
 	fmt.Println("3. Hapus Buku")
 	fmt.Println("4. Edit Buku")
-	fmt.Println("5. Keluar")
+	fmt.Println("5. Print Buku")
+	fmt.Println("6. Keluar")
 	fmt.Println("===========================================")
 	
 	fmt.Print("Masukkan Pilihan : ")
@@ -503,6 +588,8 @@ func main() {
 	case 4:
 		EditBuku()
 	case 5:
+		PrintPdfBuku()
+	case 6:
 		os.Exit(0)
 	}
 	main()
